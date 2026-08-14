@@ -8,7 +8,27 @@ currently exists in the repo. NOTE: this section was mainly worked in May 2026 w
 updates this week (mid-Aug), but I'd say it's  the least recently updated part of 
 the overall model. Perfect time for a revisit.*
 
-FIGURES: I've added some figures to the repo. Note that there is still a bug visible at
+## What this is / what it's not
+
+**What this is:** an internal working document (written for myself, small subgroup of my lab,
+and now extended to Cascade) walking through the current state of the core
+weathering/CDR model as it actually exists in the code today: what's solid,
+what's a known gap, and what's still  open. Questions aren't
+collected in one place; they're sprinkled throughout the relevant sections as
+they come up, so watch for them as you read rather than expecting a single
+consolidated list.
+
+**What it's not:** a finished specification or a polished explainer. Plenty
+of this is still being actively worked through.
+
+## What we'd love your take on
+
+A few specific places where outside perspective would help most:
+- **The moisture modifier's functional form (§2.3)** — is the simpler λ×α saturating-flux approach defensible, or is the fuller Calabrese-Porporato stochastic treatment worth the extra complexity?
+- **Whether/how to wire in CCE and leaching efficiency (§2.4, §3)** — both are built and sensitivity-tested but not yet live, largely because of unresolved double-counting risk with other penalties (§7).
+- **The double-counting questions in §7 generally** — several of the model's bottlenecks may not be as physically independent as the multiplicative structure assumes.
+
+**FIGURES:** I've added some figures to the repo. Note that there is still a bug visible at
 50 degrees of latitute (data coarseness). Overall these figures are meant to catch these bugs
 and show the differences between different model runs. In real life, they will be clipped to existing 
 cropland (real deployment possibility), but are not clipped now to show the extent of spatial 
