@@ -6,16 +6,22 @@ weathering/CDR component of a global, pixel-level ERW techno-potential model
 layer, summarized briefly at the end). Everything below reflects the code as it
 currently exists in the repo. NOTE: this section was mainly worked in May 2026 with some light 
 updates this week (mid-Aug), but I'd say it's  the least recently updated part of 
-the overall model.Perfect time for a revist.*
+the overall model. Perfect time for a revisit.*
+
+FIGURES: I've added some figures to the repo. Note that there is still a bug visible at
+50 degrees of latitute (data coarseness). Overall these figures are meant to catch these bugs
+and show the differences between different model runs. In real life, they will be clipped to existing 
+cropland (real deployment possibility), but are not clipped now to show the extent of spatial 
+variation in weathering potential.
 
 ## Why this model exists
 
 The model asks: *what if we knew the cost per tonne of ERW-based CDR everywhere,
-and how do we bring those costs down?* A working theory is that some  ERW
-modeling pursues a level of geochemical specificity that isn't needed
+and how do we bring those costs down?* A working theory is that some ERW
+modeling pursues a level of geochemical specificity that isn't actually
 warranted given how large the techno-economic and upstream-emissions
 uncertainties already are — so this model prioritizes global coverage and an
-honest uncertainty accounting over 3D, RT-model, site-specific precision, on the bet that
+honest uncertainty accounting over site-specific precision, on the bet that
 knowing *where and why* prices can fall matters more for scaling the industry
 than a marginally more precise estimate at any one site.
 
@@ -59,15 +65,16 @@ Three central spatial rasters drive the physical/kinetic side of the model:
 - **Precipitation-derived moisture variables** — storm frequency and storm depth feed the moisture modifier (§2.3); monthly precipitation and evapotranspiration separately feed leaching efficiency (§3)
 
 Rock composition comes from a different source and works differently. Since
-this is a simple weathering-kinetics model (not actually matching feedstock to farm yet),
- we use lithology-level average compositions from EarthChem, restricted
-to the rock types Hartmann et al. classify as volcanic and some plutonic —
-the lithologies that actually make sense as ERW feedstock, not the full
-global rock record. The EarthChem data is spatially kriged, and for the purposes 
-of this model alone (not optimizing for deployment - thats a different module - see below),
-we take the *averge* kind of rock you would see in real feedstocks and model potetial per ha CDR
-usign that rock's minerology. That average composition feeds the stoichiometric
-ceiling (§1) and the composition-weighted kinetics blend (§2.2b).
+this is a simple weathering-kinetics model (not actually matching feedstock to
+farm yet — that's the routing/allocation layer described in the Appendix), we
+use lithology-level average compositions from EarthChem, restricted to the
+rock types Hartmann et al. classify as volcanic and some plutonic — the
+lithologies that actually make sense as ERW feedstock, not the full global
+rock record. The EarthChem data is spatially kriged, and for the purposes of
+this model alone, we take the *average* kind of rock you'd see in real
+feedstocks and model potential per-ha CDR using that rock's mineralogy. That
+average composition feeds the stoichiometric ceiling (§1) and the
+composition-weighted kinetics blend (§2.2b).
 
 
 ---
@@ -100,15 +107,16 @@ CDR/cost figure does **not** use it — it computes a real per-pixel ceiling fro
 actual kriged Ca/Mg chemistry per source cell (`CDR_pot_pixel = (2.195 ×
 Ca_ppm + 3.620 × Mg_ppm) × 1e-6`, the same formula, already implemented and
 live in `weathering/modules/cdr.py` / `scripts/run_build_headstart.py`, fed by
-30 arc-sec kriged rasters). **All reported $/tCO₂ and CDR figures already reflect 
-real per-pixel rock composition, not one number for all basalt everywhere, but
-current overall results do not reflect the molar implementaiton (below) - this was 
-just connected.**
+30 arc-sec kriged rasters). **All reported $/tCO₂ and CDR figures already reflect
+real per-pixel rock composition, not one number for all basalt everywhere —
+but current headline results do not yet reflect the molar composition-weighted
+kinetics blend described in §2.2b, since that fix was only just implemented
+and hasn't been propagated to the routing pipeline yet.**
 
 The flat scalar's real footprint is narrower than this module's isolated use:
 it also feeds `particle_tradeoff.py` (the grinding/particle-size-fineness
 optimizer), which is live and currently disconnected from the same per-pixel
-chemistry the routing side already has. That's a inconsistency
+chemistry the routing side already has. That's an inconsistency
 worth fixing (feed it the same `cdr_ceiling` values rather than duplicating
 the formula with a stale constant) — but it only affects the optimal-grind-size
 recommendation, not any cost or CDR figure reported to date, so is pretty much moot.
@@ -279,7 +287,7 @@ the specific blind spot that motivated the change. **This is a real fork we
 could still take** if there's a strong view that the extra physical fidelity is 
 worth the preprocessing lift.
 
-OVERALL I find this component the most vexxing and worth discussion. Please weigh in!!
+OVERALL I find this component the most vexxing and worth discussion — would love Cascade's take on this one specifically.
 
 ### 2.4 Carbon capture efficiency (CCE) — built, not currently wired in
 
@@ -413,7 +421,7 @@ methodological lift, and explicitly not attempted yet.
 
 ---
 
-## 4. System loss — what survives the river-to-ocean journey (live... and kinda BLUNT (not spatial))
+## 4. System loss — what survives the river-to-ocean journey (live, but flat global percentages — not spatially varying)
 
 Of the alkalinity that reached a river, what fraction survives all the way to
 the ocean as *permanent* removal? Unlike §2.4 and §3, this term **is** applied
