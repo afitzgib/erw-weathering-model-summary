@@ -18,8 +18,8 @@ variation in weathering potential.
 
 The model asks: *what if we knew the cost per tonne of ERW-based CDR everywhere,
 and how do we bring those costs down?* A working theory is that some ERW
-modeling pursues a level of geochemical specificity that isn't actually
-warranted given how large the techno-economic and upstream-emissions
+modeling pursues a level of geochemical specificity that isn't needed, given
+how large the techno-economic and upstream-emissions
 uncertainties already are — so this model prioritizes global coverage and an
 honest uncertainty accounting over site-specific precision, on the bet that
 knowing *where and why* prices can fall matters more for scaling the industry

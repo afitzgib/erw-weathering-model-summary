@@ -1,3 +1,9 @@
+NOTE ON FIGURES: I've added some figures to the repo. Note that there is still a bug visible at
+50 degrees of latitute (data coarseness). Overall these figures are meant to catch these bugs
+and show the differences between different model runs. In real life, they will be clipped to existing 
+cropland (real deployment possibility), but are not clipped now to show the extent of spatial 
+variation in weathering potential.
+
 # Gross CDR comparison set — what changed, and what it did
 
 Four maps, each isolating exactly one additional parameter/assumption on top
