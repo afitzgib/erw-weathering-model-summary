@@ -4,17 +4,18 @@
 weathering/CDR component of a global, pixel-level ERW techno-potential model
 (the full model also has a TEA/LCA/transport layer and an agronomic co-benefits
 layer, summarized briefly at the end). Everything below reflects the code as it
-currently exists in the repo. NOTE: this section has not been touched since about May 2026, 
-so it is the least recently updated part of the overall model. Now its time to give it a closer look.*
+currently exists in the repo. NOTE: this section was mainly worked in May 2026 with some light 
+updates this week (mid-Aug), but I'd say it's  the least recently updated part of 
+the overall model.Perfect time for a revist.*
 
 ## Why this model exists
 
 The model asks: *what if we knew the cost per tonne of ERW-based CDR everywhere,
-and how do we bring those costs down?* The working theory is that a lot of ERW
-modeling pursues a level of geochemical specificity that isn't actually
+and how do we bring those costs down?* A working theory is that some  ERW
+modeling pursues a level of geochemical specificity that isn't needed
 warranted given how large the techno-economic and upstream-emissions
 uncertainties already are — so this model prioritizes global coverage and an
-honest uncertainty accounting over site-specific precision, on the bet that
+honest uncertainty accounting over 3D, RT-model, site-specific precision, on the bet that
 knowing *where and why* prices can fall matters more for scaling the industry
 than a marginally more precise estimate at any one site.
 
@@ -40,9 +41,34 @@ four multiplicative terms above, only **dissolution_fraction** and
 **system_loss** are actually applied in the routing/allocation pipeline that
 produces every reported CDR/cost figure. CCE and leaching_efficiency are
 fully built, cited, and sensitivity-tested, but not currently wired into any
-live result (§2.4 and §3 explain what that means and why). The live formula
+live (overall model) result (§2.4 and §3 explain what that means and why). The live formula
 also includes a multi-year deployment-horizon averaging term not shown above,
 left out here for simplicity.
+
+## What feeds this model, at a glance
+
+Before going stage-by-stage through CDR_max × dissolution_fraction × CCE ×
+leaching_efficiency × (1 − system_loss), it's worth laying out what data
+actually goes into it — this document covers a lot of ground and it's easy
+to lose track of which input drives which term.
+
+Three central spatial rasters drive the physical/kinetic side of the model:
+
+- **Temperature** — drives the Arrhenius dependence in the Palandri rate law (§2.1)
+- **Soil pH** — drives both the rate law's acid/base mechanisms and CCE's re-precipitation risk (§2.1, §2.4)
+- **Precipitation-derived moisture variables** — storm frequency and storm depth feed the moisture modifier (§2.3); monthly precipitation and evapotranspiration separately feed leaching efficiency (§3)
+
+Rock composition comes from a different source and works differently. Since
+this is a simple weathering-kinetics model (not actually matching feedstock to farm yet),
+ we use lithology-level average compositions from EarthChem, restricted
+to the rock types Hartmann et al. classify as volcanic and some plutonic —
+the lithologies that actually make sense as ERW feedstock, not the full
+global rock record. The EarthChem data is spatially kriged, and for the purposes 
+of this model alone (not optimizing for deployment - thats a different module - see below),
+we take the *averge* kind of rock you would see in real feedstocks and model potetial per ha CDR
+usign that rock's minerology. That average composition feeds the stoichiometric
+ceiling (§1) and the composition-weighted kinetics blend (§2.2b).
+
 
 ---
 
@@ -60,7 +86,7 @@ CO₂ per mol divalent cation, or 4 per mol forsterite)? For example (though rea
 | Enstatite | 0.88 | MgSiO₃: 2 × 44 / 100.39 |
 | Diopside | 0.82 | CaMgSi₂O₆: 4 × 44 / 216.66 |
 
-One fix worth flagging for comparability: an earlier version of this model
+One fix worth noting for comparability: an earlier version of this model
 applied an additional ×0.5 "atmospheric fraction" discount here. That got
 removed because it was double-counting the ocean Revelle-buffer term, which
 is already applied once, correctly, downstream in system loss (§4). If you're
@@ -74,15 +100,15 @@ CDR/cost figure does **not** use it — it computes a real per-pixel ceiling fro
 actual kriged Ca/Mg chemistry per source cell (`CDR_pot_pixel = (2.195 ×
 Ca_ppm + 3.620 × Mg_ppm) × 1e-6`, the same formula, already implemented and
 live in `weathering/modules/cdr.py` / `scripts/run_build_headstart.py`, fed by
-30 arc-sec kriged rasters). We checked every routing, allocation, and figure
-script in the pipeline: none of them reference the flat scalar. **All reported
-$/tCO₂ and CDR figures already reflect real per-pixel rock composition, not
-one number for all basalt everywhere.**
+30 arc-sec kriged rasters). **All reported $/tCO₂ and CDR figures already reflect 
+real per-pixel rock composition, not one number for all basalt everywhere, but
+current overall results do not reflect the molar implementaiton (below) - this was 
+just connected.**
 
 The flat scalar's real footprint is narrower than this module's isolated use:
 it also feeds `particle_tradeoff.py` (the grinding/particle-size-fineness
 optimizer), which is live and currently disconnected from the same per-pixel
-chemistry the routing side already has. That's a real, contained inconsistency
+chemistry the routing side already has. That's a inconsistency
 worth fixing (feed it the same `cdr_ceiling` values rather than duplicating
 the formula with a stale constant) — but it only affects the optimal-grind-size
 recommendation, not any cost or CDR figure reported to date, so is pretty much moot.
@@ -113,7 +139,7 @@ implement the textbook Shrinking Core Model (chemE). There is
 no time-evolving particle radius and no diffusion through a product layer in
 this model — that machinery describes *mechanical* weathering (grinding,
 attrition), where the reacting surface genuinely shrinks and changes shape over
-time (Steve feedback). ERW basalt/olivine dissolution is *chemical* weathering: a fixed BET
+time (Steve Davis feedback). ERW basalt/olivine dissolution is *chemical* weathering: a fixed BET
 surface area reacting via the Palandri rate laws above.  We kept the option to revisit
 **time-evolving surface area** as reacted rock's exposed surface changes shape
 (tracked as an open issue, not implemented) — but that's a distinct, smaller
@@ -147,7 +173,7 @@ instead of an assumed geometric one.
 
 If you have a BET measurement for an actual feedstock, the model accepts it
 directly as an override — that's the intended operational use, not just a
-global default.
+global default. NOTE: this ends up actually mattering very little in the model
 
 ### 2.2b Composition-weighted kinetics... fixed, (but needs to be fully implemented)
 
@@ -186,10 +212,9 @@ per-sample data before it can be trusted (illustrative compositions broke
 even the better-conditioned aluminum version), and EarthChem's
 literature-compiled sampling is biased toward whatever happened to get
 published, so a finer decomposition amplifies that bias rather than diluting
-it. **This is a documented, deliberately deferred option, not a dead end** —
+it. **This is a documented, deferred possibility** —
 if dissolution-rate resolution beyond this 2-phase blend is ever needed, this
-is where to pick it back up, with real per-sample major-oxide data in hand
-rather than illustrative compositions.
+is where to pick it back up, with real per-sample major-oxide data.
 
 **Status:** this fixes the standalone kinetics module and the live
 grinding/particle-size optimizer (`particle_tradeoff.py`) — both verified
@@ -202,7 +227,7 @@ candidate set on the HPC Sherlock and has not been run yet. Treat current
 headline CDR/cost figures as reflecting the pre-fix kinetics until that 
 rerun happens --> this is a planned step.
 
-### 2.3 The moisture modifier =  biggest current uncertainty
+### 2.3 The moisture modifier =  BIGGEST current uncertainty
 
 This is the piece I most want a second opinion on. Silicate dissolution in ERW
 is **transport-limited**: porewater reaches local equilibrium with the mineral
@@ -231,7 +256,7 @@ The values above 50° are real and climatologically valid, but visibly
 blockier — a texture change, not a bias, right at the 50° line, and it's
 noticeable in the actual output maps we're looking at right now. We're
 replacing CRU TS with ERA5-Land (via the Copernicus Climate Data Store,
-~0.1° native resolution, genuinely global) to close this gap; that download
+~0.1° native resolution,  global) to close this gap; that download
 and reprocessing is in progress as of this writing.
 
 **What this replaced:** the model previously used `wet_fraction = λ/(λ+δ)`
@@ -254,7 +279,7 @@ the specific blind spot that motivated the change. **This is a real fork we
 could still take** if there's a strong view that the extra physical fidelity is 
 worth the preprocessing lift.
 
-OVERALL I find this component the most vexxing and worth discussion.
+OVERALL I find this component the most vexxing and worth discussion. Please weigh in!!
 
 ### 2.4 Carbon capture efficiency (CCE) — built, not currently wired in
 
@@ -329,7 +354,7 @@ precipitation × 30-year monthly TerraClimate ET climatology, both complete
 1991–2020): global median leaching efficiency rises from **0.26 (annual) to
 0.33 (monthly)**, confirming the annual formula really was under-crediting
 broadly, not just in Mediterranean climates specifically. Comparison maps for
-both versions exist. **But this still isn't wired into any live result** — the
+both versions exist. **But this still isn't wired into any live overall result** — the
 spatial input layer for even the simpler annual formula was never read by
 anything live, so this is a fix to a penalty that isn't currently applied at
 all (see the top-of-document caveat and §7). And per the note below, wiring in
@@ -388,7 +413,7 @@ methodological lift, and explicitly not attempted yet.
 
 ---
 
-## 4. System loss — what survives the river-to-ocean journey (live)
+## 4. System loss — what survives the river-to-ocean journey (live... and kinda BLUNT (not spatial))
 
 Of the alkalinity that reached a river, what fraction survives all the way to
 the ocean as *permanent* removal? Unlike §2.4 and §3, this term **is** applied
