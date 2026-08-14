@@ -13,7 +13,7 @@ the overall model.Perfect time for a revist.*
 The model asks: *what if we knew the cost per tonne of ERW-based CDR everywhere,
 and how do we bring those costs down?* A working theory is that some  ERW
 modeling pursues a level of geochemical specificity that isn't needed
-warranted given how large the techno-economic and upstream-emissions
+ given how large the techno-economic and upstream-emissions
 uncertainties already are — so this model prioritizes global coverage and an
 honest uncertainty accounting over 3D, RT-model, site-specific precision, on the bet that
 knowing *where and why* prices can fall matters more for scaling the industry
